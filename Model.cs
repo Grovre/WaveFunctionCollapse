@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 abstract class Model
 {
@@ -50,15 +51,10 @@ abstract class Model
         observed = new int[MX * MY];
 
         weightLogWeights = new double[T];
-        sumOfWeights = 0;
-        sumOfWeightLogWeights = 0;
-
         for (int t = 0; t < T; t++)
-        {
             weightLogWeights[t] = weights[t] * Math.Log(weights[t]);
-            sumOfWeights += weights[t];
-            sumOfWeightLogWeights += weightLogWeights[t];
-        }
+        sumOfWeights = weights.Sum();
+        sumOfWeightLogWeights = weightLogWeights.Sum();
 
         startingEntropy = Math.Log(sumOfWeights) - sumOfWeightLogWeights / sumOfWeights;
 
@@ -146,8 +142,7 @@ abstract class Model
         {
             (int i1, int t1) = stack.Pop();
 
-            int x1 = i1 % MX;
-            int y1 = i1 / MX;
+            int y1 = Math.DivRem(i1, MX, out int x1);
 
             for (int d = 0; d < 4; d++)
             {
@@ -155,10 +150,8 @@ abstract class Model
                 int y2 = y1 + dy[d];
                 if (!periodic && (x2 < 0 || y2 < 0 || x2 + N > MX || y2 + N > MY)) continue;
 
-                if (x2 < 0) x2 += MX;
-                else if (x2 >= MX) x2 -= MX;
-                if (y2 < 0) y2 += MY;
-                else if (y2 >= MY) y2 -= MY;
+                x2 = (x2 % MX + MX) % MX;
+                y2 = (y2 % MY + MY) % MY;
 
                 int i2 = x2 + y2 * MX;
                 int[] p = propagator[d][t1];
@@ -182,8 +175,7 @@ abstract class Model
     {
         wave[i][t] = false;
 
-        int[] comp = compatible[i][t];
-        for (int d = 0; d < 4; d++) comp[d] = 0;
+        Array.Clear(compatible[i][t]);
         stack.Push((i, t));
 
         sumsOfOnes[i] -= 1;
@@ -196,19 +188,17 @@ abstract class Model
 
     void Clear()
     {
+        Array.Fill(sumsOfOnes, weights.Length);
+        Array.Fill(sumsOfWeights, sumOfWeights);
+        Array.Fill(sumsOfWeightLogWeights, sumOfWeightLogWeights);
+        Array.Fill(entropies, startingEntropy);
+        Array.Fill(observed, -1);
         for (int i = 0; i < wave.Length; i++)
         {
+            Array.Fill(wave[i], true);
             for (int t = 0; t < T; t++)
-            {
-                wave[i][t] = true;
-                for (int d = 0; d < 4; d++) compatible[i][t][d] = propagator[opposite[d]][t].Length;
-            }
-
-            sumsOfOnes[i] = weights.Length;
-            sumsOfWeights[i] = sumOfWeights;
-            sumsOfWeightLogWeights[i] = sumOfWeightLogWeights;
-            entropies[i] = startingEntropy;
-            observed[i] = -1;
+                for (int d = 0; d < 4; d++)
+                    compatible[i][t][d] = propagator[opposite[d]][t].Length;
         }
         observedSoFar = 0;
 
