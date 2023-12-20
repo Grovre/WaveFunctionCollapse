@@ -1,6 +1,7 @@
 ﻿// Copyright (C) 2016 Maxim Gumin, The MIT License (MIT)
 
 using System;
+using System.Collections.Generic;
 
 abstract class Model
 {
@@ -10,8 +11,8 @@ abstract class Model
     int[][][] compatible;
     protected int[] observed;
 
-    (int, int)[] stack;
-    int stacksize, observedSoFar;
+    Stack<(int, int)> stack;
+    int observedSoFar;
 
     protected int MX, MY, T, N;
     protected bool periodic, ground;
@@ -66,8 +67,7 @@ abstract class Model
         sumsOfWeightLogWeights = new double[MX * MY];
         entropies = new double[MX * MY];
 
-        stack = new (int, int)[wave.Length * T];
-        stacksize = 0;
+        stack = new(wave.Length * T);
     }
 
     public bool Run(int seed, int limit)
@@ -142,10 +142,9 @@ abstract class Model
 
     bool Propagate()
     {
-        while (stacksize > 0)
+        while (stack.Count > 0)
         {
-            (int i1, int t1) = stack[stacksize - 1];
-            stacksize--;
+            (int i1, int t1) = stack.Pop();
 
             int x1 = i1 % MX;
             int y1 = i1 / MX;
@@ -185,8 +184,7 @@ abstract class Model
 
         int[] comp = compatible[i][t];
         for (int d = 0; d < 4; d++) comp[d] = 0;
-        stack[stacksize] = (i, t);
-        stacksize++;
+        stack.Push((i, t));
 
         sumsOfOnes[i] -= 1;
         sumsOfWeights[i] -= weights[t];
