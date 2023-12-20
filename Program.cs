@@ -61,11 +61,14 @@ static class Program
                             System.IO.File.WriteAllText($"output/{name} {seed}.txt", stmodel.TextOutput());
                         break;
                     }
-                    else Console.WriteLine("CONTRADICTION");
+                    
+                    Console.WriteLine("CONTRADICTION");
                 }
             }
         }
 
-        Console.WriteLine($"time = {sw.ElapsedMilliseconds}");
+        Console.WriteLine($"time = {sw.ElapsedMilliseconds:N0}ms");
+        Console.WriteLine("Press any key to continue");
+        Console.ReadKey();
     }
 }
